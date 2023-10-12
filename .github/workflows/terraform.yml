@@ -48,16 +48,19 @@ on:
   push:
 #    branches: [ "main" ]
   pull_request:
-  workflow_dispatch:
-    inputs:
-      env:
-        description: Environment name
-        required: true
-        default: 'dev'
-        type: string
+#  workflow_dispatch:
+#    inputs:
+#      env:
+#        description: Environment name
+#        required: true
+#        default: 'dev'
+#        type: string
 
 permissions:
   contents: read
+
+env:
+  ENV: dev
 
 jobs:
   terraform:
@@ -97,7 +100,7 @@ jobs:
 
       # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
       - name: Terraform Init
-        run: ENV=${{ github.event.inputs.env }} ./terraform-init-ci.sh
+        run: ENV=$ENV ./terraform-init-ci.sh
 
       # Checks that all Terraform configuration files adhere to a canonical format
       - name: Terraform Format
