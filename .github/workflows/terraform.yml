@@ -74,6 +74,9 @@ jobs:
       # Checkout the repository to the GitHub Actions runner
       - name: Checkout
         uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
 
       # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
       # - name: Setup Terraform
@@ -94,7 +97,7 @@ jobs:
 
       # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
       - name: Terraform Init
-        run: ENV=${{ github.event.inputs.env }} ./terraform-init.sh
+        run: ENV=${{ github.event.inputs.env }} ./terraform-init-ci.sh
 
       # Checks that all Terraform configuration files adhere to a canonical format
       - name: Terraform Format
