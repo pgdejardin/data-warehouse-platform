@@ -16,6 +16,7 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 !tfvars/dev.tfvars
+!tfvars/prd.tfvars
 !global.auto.tfvars
 
 # Ignore override files as they are usually used to override resources locally and so
