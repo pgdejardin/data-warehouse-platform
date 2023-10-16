@@ -10,7 +10,7 @@ resource "aws_vpc" "digipoc_vpc" {
 resource "aws_subnet" "public_subnet" {
   vpc_id            = aws_vpc.digipoc_vpc.id
   cidr_block        = "10.0.1.0/24"
-  availability_zone = "1a"
+  availability_zone = "${var.region}a"
 
   tags = {
     Name        = "Digipoc Public Subnet"
@@ -21,7 +21,7 @@ resource "aws_subnet" "public_subnet" {
 resource "aws_subnet" "private_subnet" {
   vpc_id            = aws_vpc.digipoc_vpc.id
   cidr_block        = "10.0.2.0/24"
-  availability_zone = "1a"
+  availability_zone = "${var.region}a"
 
   tags = {
     Name        = "Digipoc Private Subnet"
