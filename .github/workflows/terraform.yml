@@ -42,31 +42,20 @@
 #       with:
 #         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-name: 'Terraform'
+name: 'Terraform - Dev'
 
 on:
   push:
-#    branches: [ "main" ]
   pull_request:
-#  workflow_dispatch:
-#    inputs:
-#      env:
-#        description: Environment name
-#        required: true
-#        default: 'dev'
-#        type: string
 
 permissions:
   contents: read
-
-env:
-  ENV: dev
 
 jobs:
   terraform:
     name: 'Terraform'
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -80,13 +69,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
-
-      # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
-      # - name: Setup Terraform
-      #   uses: hashicorp/setup-terraform@v1
-      #   with:
-      #     cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -100,7 +82,7 @@ jobs:
 
       # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
       - name: Terraform Init
-        run: ENV=$ENV ./terraform-init-ci.sh
+        run: ENV=${{ vars.ENV }} ./terraform-init-ci.sh
 
       # Checks that all Terraform configuration files adhere to a canonical format
       - name: Terraform Format
