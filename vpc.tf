@@ -1,94 +1,156 @@
-resource "aws_vpc" "digipoc_vpc" {
-  cidr_block = "10.0.0.0/16"
+locals {
+  name   = "${var.application}-vpc"
+  region = var.region
+
+  vpc_cidr = "10.0.0.0/16"
+  azs      = slice(data.aws_availability_zones.available.names, 0, 3)
 
   tags = {
-    Name        = "Digipoc VPC"
     Application = var.application
+    Owner       = "pgdejardin"
+  }
+
+  network_acls = {
+    default_inbound = [
+      {
+        rule_number = 900
+        rule_action = "allow"
+        from_port   = 1024
+        to_port     = 65535
+        protocol    = "tcp"
+        cidr_block  = "0.0.0.0/0"
+      },
+    ]
+    default_outbound = [
+      {
+        rule_number = 900
+        rule_action = "allow"
+        from_port   = 32768
+        to_port     = 65535
+        protocol    = "tcp"
+        cidr_block  = "0.0.0.0/0"
+      },
+    ]
+    public_inbound = [
+      {
+        rule_number = 100
+        rule_action = "allow"
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_block  = "0.0.0.0/0"
+      },
+      {
+        rule_number = 110
+        rule_action = "allow"
+        from_port   = 443
+        to_port     = 443
+        protocol    = "tcp"
+        cidr_block  = "0.0.0.0/0"
+      },
+      {
+        rule_number = 120
+        rule_action = "allow"
+        from_port   = 22
+        to_port     = 22
+        protocol    = "tcp"
+        cidr_block  = "0.0.0.0/0"
+      },
+      {
+        rule_number = 130
+        rule_action = "allow"
+        from_port   = 3389
+        to_port     = 3389
+        protocol    = "tcp"
+        cidr_block  = "0.0.0.0/0"
+      },
+      {
+        rule_number     = 140
+        rule_action     = "allow"
+        from_port       = 80
+        to_port         = 80
+        protocol        = "tcp"
+        ipv6_cidr_block = "::/0"
+      },
+    ]
+    public_outbound = [
+      {
+        rule_number = 100
+        rule_action = "allow"
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_block  = "0.0.0.0/0"
+      },
+      {
+        rule_number = 110
+        rule_action = "allow"
+        from_port   = 443
+        to_port     = 443
+        protocol    = "tcp"
+        cidr_block  = "0.0.0.0/0"
+      },
+      {
+        rule_number = 120
+        rule_action = "allow"
+        from_port   = 1433
+        to_port     = 1433
+        protocol    = "tcp"
+        cidr_block  = "10.0.100.0/22"
+      },
+      {
+        rule_number = 130
+        rule_action = "allow"
+        from_port   = 22
+        to_port     = 22
+        protocol    = "tcp"
+        cidr_block  = "10.0.100.0/22"
+      },
+      {
+        rule_number = 140
+        rule_action = "allow"
+        icmp_code   = -1
+        icmp_type   = 8
+        protocol    = "icmp"
+        cidr_block  = "10.0.0.0/22"
+      },
+      {
+        rule_number     = 150
+        rule_action     = "allow"
+        from_port       = 90
+        to_port         = 90
+        protocol        = "tcp"
+        ipv6_cidr_block = "::/0"
+      },
+    ]
   }
 }
 
-resource "aws_subnet" "public_subnet" {
-  vpc_id            = aws_vpc.digipoc_vpc.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "${var.region}a"
+################################################################################
+# VPC Module
+################################################################################
 
-  tags = {
-    Name        = "Digipoc Public Subnet"
-    Application = var.application
-  }
-}
+module "digipoc_vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "5.1.2"
 
-resource "aws_subnet" "private_subnet" {
-  vpc_id            = aws_vpc.digipoc_vpc.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "${var.region}a"
+  name = local.name
+  cidr = local.vpc_cidr
 
-  tags = {
-    Name        = "Digipoc Private Subnet"
-    Application = var.application
-  }
-}
+  azs             = local.azs
+  private_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 4, k)]
+  public_subnets  = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 4)]
 
-resource "aws_internet_gateway" "internet_gateway" {
-  vpc_id = aws_vpc.digipoc_vpc.id
+  create_database_subnet_group = true
 
-  tags = {
-    Name        = "Digipoc Internet Gateway"
-    Application = var.application
-  }
-}
+  manage_default_network_acl    = true
+  private_dedicated_network_acl = false
+  public_dedicated_network_acl  = true
+  public_inbound_acl_rules      = concat(local.network_acls["default_inbound"], local.network_acls["public_inbound"])
+  public_outbound_acl_rules     = concat(local.network_acls["default_outbound"], local.network_acls["public_outbound"])
 
-resource "aws_route_table" "public_route_table" {
-  vpc_id = aws_vpc.digipoc_vpc.id
+  enable_nat_gateway = false
+  single_nat_gateway = true
 
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.internet_gateway.id
-  }
-
-  route {
-    ipv6_cidr_block = "::/0"
-    gateway_id      = aws_internet_gateway.internet_gateway.id
-  }
-
-  tags = {
-    Name        = "Digipoc Public Route Table"
-    Application = var.application
-  }
-}
-
-resource "aws_route_table_association" "public_1_rt_a" {
-  subnet_id      = aws_subnet.public_subnet.id
-  route_table_id = aws_route_table.public_route_table.id
-}
-
-resource "aws_security_group" "web_sg" {
-  name   = "HTTP and SSH"
-  vpc_id = aws_vpc.digipoc_vpc.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = -1
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name        = "Digipoc Access from web security group"
-    Application = var.application
-  }
+  tags = local.tags
 }
