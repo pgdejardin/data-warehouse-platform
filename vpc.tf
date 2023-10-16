@@ -141,16 +141,16 @@ module "digipoc_vpc" {
   private_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 4, k)]
   public_subnets  = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 4)]
 
-  public_dedicated_network_acl = true
-  public_inbound_acl_rules     = concat(local.network_acls["default_inbound"], local.network_acls["public_inbound"])
-  public_outbound_acl_rules    = concat(local.network_acls["default_outbound"], local.network_acls["public_outbound"])
+  create_database_subnet_group = true
 
+  manage_default_network_acl    = true
   private_dedicated_network_acl = false
-
-  manage_default_network_acl = true
+  public_dedicated_network_acl  = true
+  public_inbound_acl_rules      = concat(local.network_acls["default_inbound"], local.network_acls["public_inbound"])
+  public_outbound_acl_rules     = concat(local.network_acls["default_outbound"], local.network_acls["public_outbound"])
 
   enable_nat_gateway = false
   single_nat_gateway = true
 
-  tags     = local.tags
+  tags = local.tags
 }
