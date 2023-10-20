@@ -1,4 +1,4 @@
-locals { }
+locals {}
 
 module "autoscaling_labels" {
   source         = "../labels"
@@ -90,7 +90,7 @@ resource "aws_autoscaling_group" "asg" {
   metrics_granularity = "1Minute"
 
   launch_template {
-    name = aws_launch_template.lt.name
+    name    = aws_launch_template.lt.name
     version = aws_launch_template.lt.latest_version
   }
 

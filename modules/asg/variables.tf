@@ -52,20 +52,20 @@ variable "default_version" {
 
 variable "update_default_version" {
   description = "Whether to update Default Version each update. Conflicts with `default_version`"
-  type = string
-  default = null
+  type        = string
+  default     = null
 }
 
 variable "disable_api_termination" {
   description = "If true, enables EC2 Instance termination protection"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 variable "instance_initiated_shutdown_behavior" {
   description = "Shutdown behavior for the instance. Can be `stop` or `terminate`. (Default: `stop`)"
-  type = string
-  default = "stop"
+  type        = string
+  default     = "stop"
 }
 
 variable "monitoring_enabled" {
@@ -76,8 +76,8 @@ variable "monitoring_enabled" {
 
 variable "root_volume_encrypted" {
   description = "Enables root volume encryption"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 variable "root_volume_size" {
@@ -94,8 +94,8 @@ variable "root_volume_type" {
 
 variable "block_device_mappings" {
   description = "Specify volumes to attach to the instance besides the volume specified by the AMI"
-  type = list(any)
-  default = []
+  type        = list(any)
+  default     = []
 }
 
 

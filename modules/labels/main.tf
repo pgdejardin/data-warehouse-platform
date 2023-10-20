@@ -8,11 +8,11 @@ locals {
   label = format("%s-%s-%s-%s", local.application, local.environment, local.component, local.component_type)
 
   tags = {
-    Name          = local.label
-    Application   = local.application
-    Component     = local.component
-    Environment   = local.environment
-    Owner         = local.owner
+    Name        = local.label
+    Application = local.application
+    Component   = local.component
+    Environment = local.environment
+    Owner       = local.owner
   }
 
   tags_ec2 = merge(local.tags, {})
