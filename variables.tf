@@ -24,3 +24,7 @@ variable "owner" {
 variable "clickhouse_instance_type" {
   default = "c5.large"
 }
+
+variable "key_pair_name" {
+  default = "aws_digipoc"
+}

@@ -8,6 +8,26 @@ locals {
   }
 
   network_acls = {
+    #    private_inbound = [
+    #      {
+    #        rule_number = 220
+    #        rule_action = "allow"
+    #        from_port   = 22
+    #        to_port     = 22
+    #        protocol    = "tcp"
+    #        cidr_block  = "13.38.154.152/32"
+    #      },
+    #    ]
+    #    private_outbound = [
+    #      {
+    #        rule_number = 220
+    #        rule_action = "allow"
+    #        from_port   = 22
+    #        to_port     = 22
+    #        protocol    = "tcp"
+    #        cidr_block  = "13.38.154.152/32"
+    #      },
+    #    ]
     default_inbound = [
       {
         rule_number = 900
@@ -145,9 +165,13 @@ module "digipoc_vpc" {
   public_dedicated_network_acl  = true
   public_inbound_acl_rules      = concat(local.network_acls["default_inbound"], local.network_acls["public_inbound"])
   public_outbound_acl_rules     = concat(local.network_acls["default_outbound"], local.network_acls["public_outbound"])
+  #  private_inbound_acl_rules     = local.network_acls["private_inbound"]
+  #  private_outbound_acl_rules    = local.network_acls["private_outbound"]
 
-  enable_nat_gateway = false
-  single_nat_gateway = true
+  enable_nat_gateway     = true
+  single_nat_gateway     = true
+  one_nat_gateway_per_az = false
+  enable_vpn_gateway     = false
 
   tags = local.tags
 }
