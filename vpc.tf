@@ -1,7 +1,4 @@
 locals {
-  name   = "${var.application}-vpc"
-  region = var.region
-
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
 
@@ -134,7 +131,7 @@ module "digipoc_vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.1.2"
 
-  name = local.name
+  name = "${var.application}-vpc"
   cidr = local.vpc_cidr
 
   azs             = local.azs

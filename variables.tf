@@ -3,7 +3,7 @@ variable "region" {
   type    = string
 }
 
-variable "env" {
+variable "environment" {
   default = "dev"
   type    = string
 }
@@ -11,4 +11,16 @@ variable "env" {
 variable "application" {
   default = "digipoc"
   type    = string
+}
+
+variable "owner" {
+  default = "pgdejardin"
+  type    = string
+}
+
+
+### Clickhouse ###
+
+variable "clickhouse_instance_type" {
+  default = "c5.large"
 }
