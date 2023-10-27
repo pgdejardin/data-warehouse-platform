@@ -147,29 +147,29 @@ module "clickhouse" {
       encrypted   = true
       volume_type = "gp3"
       throughput  = 200
-      volume_size = 50
+      volume_size = 300
       tags = {
         Name = "root-volume"
       }
     },
   ]
 
-  ebs_block_device = [
-    {
-      device_name = "/dev/sdf"
-      volume_type = "gp3"
-      volume_size = 500
-      throughput  = 200
-      encrypted   = true
-      iops        = 4500
-      kms_key_id  = aws_kms_key.clickhouse_kms.arn
-      tags = {
-        MountPoint = "/mnt/data"
-      }
-    }
-  ]
+#  ebs_block_device = [
+#    {
+#      device_name = "/dev/sdf"
+#      volume_type = "gp3"
+#      volume_size = 500
+#      throughput  = 200
+#      encrypted   = true
+#      iops        = 4500
+#      kms_key_id  = aws_kms_key.clickhouse_kms.arn
+#      tags = {
+#        MountPoint = "/mnt/data"
+#      }
+#    }
+#  ]
 
   tags = module.clickhouse_labels.tags
 }
 
-resource "aws_kms_key" "clickhouse_kms" {}
+#resource "aws_kms_key" "clickhouse_kms" {}

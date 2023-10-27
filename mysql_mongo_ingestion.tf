@@ -1,4 +1,3 @@
-
 locals {
   ingestion_user_data = <<-EOT
     #!/bin/bash
@@ -13,7 +12,10 @@ locals {
     gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
     EOF
 
-    sudo yum install -y mongodb-org
+    sudo dnf install -y mongodb-org
+    sudo dnf erase -qy mongodb-mongosh
+    sudo dnf install -qy mongodb-mongosh-shared-openssl3
+
     sudo systemctl enable mongod
     sudo systemctl start mongod
     sudo systemctl status mongod
@@ -21,10 +23,19 @@ locals {
     ### MYSQL ###
     sudo rpm -Uvh https://repo.mysql.com/mysql80-community-release-el9-4.noarch.rpm
     sudo sed -i 's/enabled=1/enabled=0/' /etc/yum.repos.d/mysql-community.repo
-    sudo yum --enablerepo=mysql80-community install -y mysql-community-server
+    sudo dnf --enablerepo=mysql80-community install -y mysql-community-server
     sudo systemctl enable mysqld
     sudo systemctl start mysqld
     sudo systemctl status mysqld
+
+    TMP_PWD=sudo grep 'temporary password' /var/log/mysqld.log | sed -rn 's/.*\sroot@localhost:\s(.{12})$/\1/p'
+    mysql -uroot -p -e$TMP_PWD 'ALTER USER 'root'@'localhost' IDENTIFIED BY '${random_password.mysql_password.result}';
+
+    ### OTHER ###
+    export CLICKHOUSE_DNS=${module.clickhouse.public_dns}
+    cat <<EOF > /data/app/conf/mysql.conf
+    user=root
+    password=${random_password.mysql_password.result}
   EOT
 }
 
@@ -41,6 +52,8 @@ module "ingestion" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "5.5.0"
 
+  depends_on = [module.clickhouse]
+
   name = module.ingestion_labels.full_label
 
   ami                         = data.aws_ami.amazon_linux.id
@@ -56,7 +69,7 @@ module "ingestion" {
 
   create_iam_instance_profile = true
   iam_role_description        = "IAM role for EC2 instance"
-  iam_role_policies = {
+  iam_role_policies           = {
     AdministratorAccess = "arn:aws:iam::aws:policy/AdministratorAccess"
   }
 
@@ -73,34 +86,78 @@ module "ingestion" {
   #  }
 
   enable_volume_tags = false
-  root_block_device = [
+  root_block_device  = [
     {
       encrypted   = true
       volume_type = "gp3"
       throughput  = 200
-      volume_size = 50
-      tags = {
+      volume_size = 500
+      tags        = {
         Name = "root-volume"
       }
     },
   ]
 
-  ebs_block_device = [
-    {
-      device_name = "/dev/sdf"
-      volume_type = "gp3"
-      volume_size = 500
-      throughput  = 200
-      encrypted   = true
-      iops        = 4500
-      kms_key_id  = aws_kms_key.ingestion_kms.arn
-      tags = {
-        MountPoint = "/mnt/data"
-      }
-    }
-  ]
+#  ebs_block_device = [
+#    {
+#      device_name = "/dev/sdf"
+#      volume_type = "gp3"
+#      volume_size = 500
+#      throughput  = 200
+#      encrypted   = true
+#      iops        = 4500
+#      kms_key_id  = aws_kms_key.ingestion_kms.arn
+#      tags        = {
+#        MountPoint = "/mnt/data"
+#      }
+#    }
+#  ]
 
   tags = module.ingestion_labels.tags
 }
 
-resource "aws_kms_key" "ingestion_kms" {}
+#resource "aws_kms_key" "ingestion_kms" {}
+
+module "secrets_manager" {
+  source  = "terraform-aws-modules/secrets-manager/aws"
+  version = "1.1.1"
+
+  # Secret
+  name_prefix             = "${var.application}/${var.environment}/digipoc/mysql_root_user_password"
+  description             = "MySQL root user password"
+  recovery_window_in_days = 0
+
+  # Policy
+  create_policy       = true
+  block_public_policy = true
+  policy_statements   = {
+    read = {
+      sid        = "AllowAccountRead"
+      principals = [
+        {
+          type        = "AWS"
+          identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+        }
+      ]
+      actions   = ["secretsmanager:GetSecretValue"]
+      resources = ["*"]
+    }
+  }
+
+  # Version
+  create_random_password           = false
+  secret_string                    = random_password.mysql_password.result
+
+  tags = {
+    Application   = var.application
+    Component     = "mysql"
+    ComponentType = "secret"
+    Owner         = "pgdejardin"
+  }
+}
+
+resource "random_password" "mysql_password" {
+  length  = 16
+  numeric = true
+  special = true
+}

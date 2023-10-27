@@ -5,7 +5,8 @@ locals {
   environment    = lower(var.environment)
   owner          = lower(var.owner)
 
-  label = format("%s-%s-%s-%s", local.application, local.environment, local.component, local.component_type)
+  label      = format("%s-%s-%s-%s", local.application, local.environment, local.component, local.component_type)
+  tech_label = format("%s-%s-%s", local.application, local.environment, local.component_type)
 
   tags = {
     Name        = local.label
